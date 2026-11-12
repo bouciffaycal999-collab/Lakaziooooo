@@ -1,0 +1,456 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTs(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidStr(v, maxLen) {
+      return v is string && v.size() <= maxLen;
+    }
+
+    function isValidNonEmptyStr(v, maxLen) {
+      return v is string && v.size() >= 1 && v.size() <= maxLen;
+    }
+
+    function isValidUserAccount(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             (!('email' in data) || data.email == null || isValidStr(data.email, 200)) &&
+             (!('displayName' in data) || data.displayName == null || isValidStr(data.displayName, 120)) &&
+             isValidTs(data.createdAt) &&
+             isValidTs(data.updatedAt);
+    }
+
+    function isValidTileProduct(data) {
+      return isValidNonEmptyStr(data.name, 160) &&
+             isValidStr(data.usine, 80) &&
+             isValidStr(data.dimension, 40) &&
+             data.m2Carton is number && data.m2Carton > 0 &&
+             data.pcs is int && data.pcs >= 1 &&
+             data.prix is number && data.prix >= 0 &&
+             data.prixAchat is number && data.prixAchat >= 0 &&
+             data.stock is int &&
+             isValidStr(data.color, 32) &&
+             isValidStr(data.colorName, 80) &&
+             isValidStr(data.image, 500) &&
+             isValidStr(data.finition, 40) &&
+             isValidStr(data.choix, 40) &&
+             isValidStr(data.categorie, 40) &&
+             isValidStr(data.description, 500) &&
+             isValidTs(data.createdAt) &&
+             isValidTs(data.updatedAt);
+    }
+
+    function isValidInvoice(data) {
+      return isValidNonEmptyStr(data.reference, 60) &&
+             isValidNonEmptyStr(data.date, 60) &&
+             isValidStr(data.vendeur, 80) &&
+             isValidStr(data.magasin, 80) &&
+             data.client is map &&
+             isValidStr(data.client.nom, 120) &&
+             (!('tel' in data.client) || data.client.tel == null || isValidStr(data.client.tel, 40)) &&
+             (!('adresse' in data.client) || data.client.adresse == null || isValidStr(data.client.adresse, 200)) &&
+             data.articles is list && data.articles.size() <= 200 &&
+             (data.articles.size() == 0 || data.articles[0] is map) &&
+             data.lignesLibres is list && data.lignesLibres.size() <= 100 &&
+             (data.lignesLibres.size() == 0 || data.lignesLibres[0] is map) &&
+             data.totalBrut is number && data.totalBrut >= 0 &&
+             data.remise is number && data.remise >= 0 &&
+             data.totalNet is number && data.totalNet >= 0 &&
+             data.montantPaye is number && data.montantPaye >= 0 &&
+             data.resteAPayer is number && data.resteAPayer >= 0 &&
+             isValidStr(data.modePaiement, 40) &&
+             data.statut in ['Payé', 'Partiel', 'Crédit'] &&
+             isValidStr(data.notes, 500) &&
+             isValidTs(data.createdAt) &&
+             isValidTs(data.updatedAt);
+    }
+
+    function isValidCustomer(data) {
+      return isValidNonEmptyStr(data.nom, 120) &&
+             isValidStr(data.tel, 40) &&
+             isValidStr(data.adresse, 200) &&
+             data.dette is number && data.dette >= 0 &&
+             data.totalAchats is number && data.totalAchats >= 0 &&
+             isValidTs(data.createdAt) &&
+             isValidTs(data.updatedAt);
+    }
+
+    function isValidSupplier(data) {
+      return isValidNonEmptyStr(data.nom, 140) &&
+             isValidStr(data.contact, 120) &&
+             isValidStr(data.tel, 40) &&
+             isValidStr(data.adresse, 200) &&
+             isValidStr(data.usineRepresentee, 80) &&
+             data.soldeDette is number && data.soldeDette >= 0 &&
+             data.totalAchats is number && data.totalAchats >= 0 &&
+             isValidTs(data.createdAt) &&
+             isValidTs(data.updatedAt);
+    }
+
+    function isValidSupplierMovement(data) {
+      return isValidId(data.supplierId) &&
+             isValidNonEmptyStr(data.date, 60) &&
+             data.type in ['versement', 'achat'] &&
+             data.montant is number && data.montant > 0 &&
+             isValidStr(data.motif, 300) &&
+             (!('pieceJointeRef' in data) || data.pieceJointeRef == null || isValidStr(data.pieceJointeRef, 120)) &&
+             isValidStr(data.auteur, 80) &&
+             isValidTs(data.createdAt) &&
+             isValidTs(data.updatedAt);
+    }
+
+    function isValidCaisseMovement(data) {
+      return isValidNonEmptyStr(data.date, 60) &&
+             data.type in ['entree', 'sortie'] &&
+             isValidStr(data.motif, 300) &&
+             data.montant is number && data.montant > 0 &&
+             isValidStr(data.auteur, 80) &&
+             (!('referenceFacture' in data) || data.referenceFacture == null || isValidStr(data.referenceFacture, 120)) &&
+             isValidTs(data.createdAt) &&
+             isValidTs(data.updatedAt);
+    }
+
+    function isValidDailyCaisseCount(data) {
+      return isValidNonEmptyStr(data.date, 60) &&
+             isValidStr(data.magasin, 80) &&
+             isValidStr(data.auteur, 80) &&
+             data.fondOuverture is number &&
+             data.ventesEspecesJour is number &&
+             data.entreesDiversJour is number &&
+             data.sortiesJour is number &&
+             data.theorique is number &&
+             data.compteReel is number &&
+             data.ecart is number &&
+             isValidStr(data.notes, 500) &&
+             isValidTs(data.createdAt) &&
+             isValidTs(data.updatedAt);
+    }
+
+    function isValidStaffUser(data) {
+      return isValidNonEmptyStr(data.name, 100) &&
+             data.role in ['admin', 'gerant', 'vendeur'] &&
+             isValidNonEmptyStr(data.pin, 12) &&
+             isValidStr(data.magasin, 80) &&
+             data.allowedTabs is list && data.allowedTabs.size() <= 20 &&
+             (data.allowedTabs.size() == 0 || data.allowedTabs[0] is string) &&
+             data.canEditInvoices is bool &&
+             data.canDeleteInvoices is bool &&
+             data.canModifyStock is bool &&
+             data.canViewSuppliers is bool &&
+             data.canViewCaisse is bool &&
+             data.canManageUsers is bool &&
+             data.active is bool &&
+             isValidTs(data.createdAt) &&
+             isValidTs(data.updatedAt);
+    }
+
+    function isValidDepotNotification(data) {
+      return isValidId(data.invoiceId) &&
+             isValidNonEmptyStr(data.reference, 60) &&
+             isValidNonEmptyStr(data.date, 60) &&
+             isValidStr(data.vendeur, 80) &&
+             isValidStr(data.magasin, 80) &&
+             isValidStr(data.client, 120) &&
+             isValidStr(data.clientTel, 40) &&
+             data.totalNet is number && data.totalNet >= 0 &&
+             data.m2Total is number && data.m2Total >= 0 &&
+             data.cartonsTotal is int && data.cartonsTotal >= 0 &&
+             isValidStr(data.articlesSummary, 1000) &&
+             data.read is bool &&
+             isValidTs(data.createdAt) &&
+             isValidTs(data.updatedAt);
+    }
+
+    function isValidStoreInfo(data) {
+      return isValidNonEmptyStr(data.nom, 120) &&
+             isValidStr(data.nomArabe, 160) &&
+             isValidStr(data.slogan, 200) &&
+             isValidStr(data.adresse, 200) &&
+             isValidStr(data.tel, 40) &&
+             isValidStr(data.tel2, 40) &&
+             isValidStr(data.email, 160) &&
+             isValidStr(data.rc, 80) &&
+             isValidStr(data.nif, 80) &&
+             isValidStr(data.nis, 80) &&
+             isValidStr(data.ai, 80) &&
+             isValidTs(data.createdAt) &&
+             isValidTs(data.updatedAt);
+    }
+
+    function isValidAppSettings(data) {
+      return isValidNonEmptyStr(data.printFormat, 16) &&
+             isValidNonEmptyStr(data.a5Density, 24) &&
+             data.hideBainTeinteFacture is bool &&
+             isValidNonEmptyStr(data.colorTheme, 40) &&
+             data.touchFriendlyMode is bool &&
+             isValidNonEmptyStr(data.activeStore, 80) &&
+             data.enableSoundAlerts is bool &&
+             isValidTs(data.createdAt) &&
+             isValidTs(data.updatedAt);
+    }
+
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll(['userId', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'email', 'displayName', 'createdAt', 'updatedAt']) &&
+                       isValidUserAccount(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserAccount(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['email', 'displayName', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /products/{productId} {
+        allow get: if isOwner(userId) && isValidId(productId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(productId) &&
+                         incoming().keys().hasAll(['name', 'usine', 'dimension', 'm2Carton', 'pcs', 'prix', 'prixAchat', 'stock', 'color', 'colorName', 'image', 'finition', 'choix', 'categorie', 'description', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['name', 'usine', 'dimension', 'm2Carton', 'pcs', 'prix', 'prixAchat', 'stock', 'color', 'colorName', 'image', 'finition', 'choix', 'categorie', 'description', 'createdAt', 'updatedAt']) &&
+                         isValidTileProduct(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(productId) &&
+                         isValidTileProduct(incoming()) &&
+                         incoming().createdAt == existing().createdAt && (
+                           incoming().diff(existing()).affectedKeys().hasOnly(['stock', 'updatedAt']) ||
+                           incoming().diff(existing()).affectedKeys().hasOnly(['name', 'usine', 'dimension', 'm2Carton', 'pcs', 'prix', 'prixAchat', 'stock', 'color', 'colorName', 'image', 'finition', 'choix', 'categorie', 'description', 'updatedAt'])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(productId);
+      }
+
+      match /invoices/{invoiceId} {
+        allow get: if isOwner(userId) && isValidId(invoiceId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(invoiceId) &&
+                         incoming().keys().hasAll(['reference', 'date', 'vendeur', 'magasin', 'client', 'articles', 'lignesLibres', 'totalBrut', 'remise', 'totalNet', 'montantPaye', 'resteAPayer', 'modePaiement', 'statut', 'notes', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['reference', 'date', 'vendeur', 'magasin', 'client', 'articles', 'lignesLibres', 'totalBrut', 'remise', 'totalNet', 'montantPaye', 'resteAPayer', 'modePaiement', 'statut', 'notes', 'createdAt', 'updatedAt']) &&
+                         isValidInvoice(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(invoiceId) &&
+                         isValidInvoice(incoming()) &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['reference', 'date', 'vendeur', 'magasin', 'client', 'articles', 'lignesLibres', 'totalBrut', 'remise', 'totalNet', 'montantPaye', 'resteAPayer', 'modePaiement', 'statut', 'notes', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(invoiceId);
+      }
+
+      match /customers/{customerId} {
+        allow get: if isOwner(userId) && isValidId(customerId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(customerId) &&
+                         incoming().keys().hasAll(['nom', 'tel', 'adresse', 'dette', 'totalAchats', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['nom', 'tel', 'adresse', 'dette', 'totalAchats', 'createdAt', 'updatedAt']) &&
+                         isValidCustomer(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(customerId) &&
+                         isValidCustomer(incoming()) &&
+                         incoming().createdAt == existing().createdAt && (
+                           incoming().diff(existing()).affectedKeys().hasOnly(['dette', 'totalAchats', 'updatedAt']) ||
+                           incoming().diff(existing()).affectedKeys().hasOnly(['nom', 'tel', 'adresse', 'dette', 'totalAchats', 'updatedAt'])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(customerId);
+      }
+
+      match /suppliers/{supplierId} {
+        allow get: if isOwner(userId) && isValidId(supplierId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(supplierId) &&
+                         incoming().keys().hasAll(['nom', 'contact', 'tel', 'adresse', 'usineRepresentee', 'soldeDette', 'totalAchats', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['nom', 'contact', 'tel', 'adresse', 'usineRepresentee', 'soldeDette', 'totalAchats', 'createdAt', 'updatedAt']) &&
+                         isValidSupplier(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(supplierId) &&
+                         isValidSupplier(incoming()) &&
+                         incoming().createdAt == existing().createdAt && (
+                           incoming().diff(existing()).affectedKeys().hasOnly(['soldeDette', 'totalAchats', 'updatedAt']) ||
+                           incoming().diff(existing()).affectedKeys().hasOnly(['nom', 'contact', 'tel', 'adresse', 'usineRepresentee', 'soldeDette', 'totalAchats', 'updatedAt'])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(supplierId);
+      }
+
+      match /supplier_movements/{movementId} {
+        allow get: if isOwner(userId) && isValidId(movementId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(movementId) &&
+                         incoming().keys().hasAll(['supplierId', 'date', 'type', 'montant', 'motif', 'auteur', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['supplierId', 'date', 'type', 'montant', 'motif', 'pieceJointeRef', 'auteur', 'createdAt', 'updatedAt']) &&
+                         isValidSupplierMovement(incoming()) &&
+                         exists(/databases/$(database)/documents/users/$(userId)/suppliers/$(incoming().supplierId));
+
+        allow update: if isOwner(userId) &&
+                         isValidId(movementId) &&
+                         isValidSupplierMovement(incoming()) &&
+                         incoming().supplierId == existing().supplierId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['date', 'type', 'montant', 'motif', 'pieceJointeRef', 'auteur', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(movementId);
+      }
+
+      match /caisse_movements/{movementId} {
+        allow get: if isOwner(userId) && isValidId(movementId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(movementId) &&
+                         incoming().keys().hasAll(['date', 'type', 'motif', 'montant', 'auteur', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['date', 'type', 'motif', 'montant', 'auteur', 'referenceFacture', 'createdAt', 'updatedAt']) &&
+                         isValidCaisseMovement(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(movementId) &&
+                         isValidCaisseMovement(incoming()) &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['date', 'type', 'motif', 'montant', 'auteur', 'referenceFacture', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(movementId);
+      }
+
+      match /daily_caisse_counts/{countId} {
+        allow get: if isOwner(userId) && isValidId(countId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(countId) &&
+                         incoming().keys().hasAll(['date', 'magasin', 'auteur', 'fondOuverture', 'ventesEspecesJour', 'entreesDiversJour', 'sortiesJour', 'theorique', 'compteReel', 'ecart', 'notes', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['date', 'magasin', 'auteur', 'fondOuverture', 'ventesEspecesJour', 'entreesDiversJour', 'sortiesJour', 'theorique', 'compteReel', 'ecart', 'notes', 'createdAt', 'updatedAt']) &&
+                         isValidDailyCaisseCount(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(countId) &&
+                         isValidDailyCaisseCount(incoming()) &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['date', 'magasin', 'auteur', 'fondOuverture', 'ventesEspecesJour', 'entreesDiversJour', 'sortiesJour', 'theorique', 'compteReel', 'ecart', 'notes', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(countId);
+      }
+
+      match /staff_users/{staffId} {
+        allow get: if isOwner(userId) && isValidId(staffId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(staffId) &&
+                         incoming().keys().hasAll(['name', 'role', 'pin', 'magasin', 'allowedTabs', 'canEditInvoices', 'canDeleteInvoices', 'canModifyStock', 'canViewSuppliers', 'canViewCaisse', 'canManageUsers', 'active', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['name', 'role', 'pin', 'magasin', 'allowedTabs', 'canEditInvoices', 'canDeleteInvoices', 'canModifyStock', 'canViewSuppliers', 'canViewCaisse', 'canManageUsers', 'active', 'createdAt', 'updatedAt']) &&
+                         isValidStaffUser(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(staffId) &&
+                         isValidStaffUser(incoming()) &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'role', 'pin', 'magasin', 'allowedTabs', 'canEditInvoices', 'canDeleteInvoices', 'canModifyStock', 'canViewSuppliers', 'canViewCaisse', 'canManageUsers', 'active', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(staffId);
+      }
+
+      match /notifications/{notificationId} {
+        allow get: if isOwner(userId) && isValidId(notificationId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(notificationId) &&
+                         incoming().keys().hasAll(['invoiceId', 'reference', 'date', 'vendeur', 'magasin', 'client', 'clientTel', 'totalNet', 'm2Total', 'cartonsTotal', 'articlesSummary', 'read', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['invoiceId', 'reference', 'date', 'vendeur', 'magasin', 'client', 'clientTel', 'totalNet', 'm2Total', 'cartonsTotal', 'articlesSummary', 'read', 'createdAt', 'updatedAt']) &&
+                         isValidDepotNotification(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(notificationId) &&
+                         isValidDepotNotification(incoming()) &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['read', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(notificationId);
+      }
+
+      match /store_info/{configId} {
+        allow get: if isOwner(userId) && isValidId(configId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         configId == 'default' &&
+                         incoming().keys().hasAll(['nom', 'nomArabe', 'slogan', 'adresse', 'tel', 'tel2', 'email', 'rc', 'nif', 'nis', 'ai', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['nom', 'nomArabe', 'slogan', 'adresse', 'tel', 'tel2', 'email', 'rc', 'nif', 'nis', 'ai', 'createdAt', 'updatedAt']) &&
+                         isValidStoreInfo(incoming());
+
+        allow update: if isOwner(userId) &&
+                         configId == 'default' &&
+                         isValidStoreInfo(incoming()) &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['nom', 'nomArabe', 'slogan', 'adresse', 'tel', 'tel2', 'email', 'rc', 'nif', 'nis', 'ai', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(configId);
+      }
+
+      match /app_settings/{configId} {
+        allow get: if isOwner(userId) && isValidId(configId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         configId == 'default' &&
+                         incoming().keys().hasAll(['printFormat', 'a5Density', 'hideBainTeinteFacture', 'colorTheme', 'touchFriendlyMode', 'activeStore', 'enableSoundAlerts', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['printFormat', 'a5Density', 'hideBainTeinteFacture', 'colorTheme', 'touchFriendlyMode', 'activeStore', 'enableSoundAlerts', 'createdAt', 'updatedAt']) &&
+                         isValidAppSettings(incoming());
+
+        allow update: if isOwner(userId) &&
+                         configId == 'default' &&
+                         isValidAppSettings(incoming()) &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['printFormat', 'a5Density', 'hideBainTeinteFacture', 'colorTheme', 'touchFriendlyMode', 'activeStore', 'enableSoundAlerts', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(configId);
+      }
+    }
+  }
+}

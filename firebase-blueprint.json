@@ -1,0 +1,285 @@
+{
+  "entities": {
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "Authenticated Firebase workspace owner profile",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the owner" },
+        "email": { "type": "string", "description": "Google account email" },
+        "displayName": { "type": "string", "description": "Google display name" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" }
+      },
+      "required": ["userId", "createdAt", "updatedAt"]
+    },
+    "TileProduct": {
+      "title": "TileProduct",
+      "description": "Ceramic tile catalog item and carton stock",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "usine": { "type": "string" },
+        "dimension": { "type": "string" },
+        "m2Carton": { "type": "number" },
+        "pcs": { "type": "integer" },
+        "prix": { "type": "number" },
+        "prixAchat": { "type": "number" },
+        "stock": { "type": "integer" },
+        "color": { "type": "string" },
+        "colorName": { "type": "string" },
+        "image": { "type": "string" },
+        "finition": { "type": "string" },
+        "choix": { "type": "string" },
+        "categorie": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" }
+      },
+      "required": ["name", "usine", "dimension", "m2Carton", "pcs", "prix", "prixAchat", "stock", "color", "colorName", "image", "finition", "choix", "categorie", "description", "createdAt", "updatedAt"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "POS customer sale invoice or quote",
+      "type": "object",
+      "properties": {
+        "reference": { "type": "string" },
+        "date": { "type": "string" },
+        "vendeur": { "type": "string" },
+        "magasin": { "type": "string" },
+        "client": { "type": "object" },
+        "articles": { "type": "array" },
+        "lignesLibres": { "type": "array" },
+        "totalBrut": { "type": "number" },
+        "remise": { "type": "number" },
+        "totalNet": { "type": "number" },
+        "montantPaye": { "type": "number" },
+        "resteAPayer": { "type": "number" },
+        "modePaiement": { "type": "string" },
+        "statut": { "type": "string", "enum": ["Payé", "Partiel", "Crédit"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" }
+      },
+      "required": ["reference", "date", "vendeur", "magasin", "client", "articles", "lignesLibres", "totalBrut", "remise", "totalNet", "montantPaye", "resteAPayer", "modePaiement", "statut", "notes", "createdAt", "updatedAt"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "POS customer record and credit balance",
+      "type": "object",
+      "properties": {
+        "nom": { "type": "string" },
+        "tel": { "type": "string" },
+        "adresse": { "type": "string" },
+        "dette": { "type": "number" },
+        "totalAchats": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" }
+      },
+      "required": ["nom", "tel", "adresse", "dette", "totalAchats", "createdAt", "updatedAt"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Ceramic factory supplier account",
+      "type": "object",
+      "properties": {
+        "nom": { "type": "string" },
+        "contact": { "type": "string" },
+        "tel": { "type": "string" },
+        "adresse": { "type": "string" },
+        "usineRepresentee": { "type": "string" },
+        "soldeDette": { "type": "number" },
+        "totalAchats": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" }
+      },
+      "required": ["nom", "contact", "tel", "adresse", "usineRepresentee", "soldeDette", "totalAchats", "createdAt", "updatedAt"]
+    },
+    "SupplierMovement": {
+      "title": "SupplierMovement",
+      "description": "Supplier payment or merchandise reception record",
+      "type": "object",
+      "properties": {
+        "supplierId": { "type": "string" },
+        "date": { "type": "string" },
+        "type": { "type": "string", "enum": ["versement", "achat"] },
+        "montant": { "type": "number" },
+        "motif": { "type": "string" },
+        "pieceJointeRef": { "type": "string" },
+        "auteur": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" }
+      },
+      "required": ["supplierId", "date", "type", "montant", "motif", "auteur", "createdAt", "updatedAt"]
+    },
+    "CaisseMovement": {
+      "title": "CaisseMovement",
+      "description": "Cash register entry or expense movement",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "type": { "type": "string", "enum": ["entree", "sortie"] },
+        "motif": { "type": "string" },
+        "montant": { "type": "number" },
+        "auteur": { "type": "string" },
+        "referenceFacture": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" }
+      },
+      "required": ["date", "type", "motif", "montant", "auteur", "createdAt", "updatedAt"]
+    },
+    "DailyCaisseCount": {
+      "title": "DailyCaisseCount",
+      "description": "End-of-day cash drawer reconciliation record",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "magasin": { "type": "string" },
+        "auteur": { "type": "string" },
+        "fondOuverture": { "type": "number" },
+        "ventesEspecesJour": { "type": "number" },
+        "entreesDiversJour": { "type": "number" },
+        "sortiesJour": { "type": "number" },
+        "theorique": { "type": "number" },
+        "compteReel": { "type": "number" },
+        "ecart": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" }
+      },
+      "required": ["date", "magasin", "auteur", "fondOuverture", "ventesEspecesJour", "entreesDiversJour", "sortiesJour", "theorique", "compteReel", "ecart", "notes", "createdAt", "updatedAt"]
+    },
+    "StaffUser": {
+      "title": "StaffUser",
+      "description": "Local POS staff operator profile",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "gerant", "vendeur"] },
+        "pin": { "type": "string" },
+        "magasin": { "type": "string" },
+        "allowedTabs": { "type": "array" },
+        "canEditInvoices": { "type": "boolean" },
+        "canDeleteInvoices": { "type": "boolean" },
+        "canModifyStock": { "type": "boolean" },
+        "canViewSuppliers": { "type": "boolean" },
+        "canViewCaisse": { "type": "boolean" },
+        "canManageUsers": { "type": "boolean" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" }
+      },
+      "required": ["name", "role", "pin", "magasin", "allowedTabs", "canEditInvoices", "canDeleteInvoices", "canModifyStock", "canViewSuppliers", "canViewCaisse", "canManageUsers", "active", "createdAt", "updatedAt"]
+    },
+    "DepotNotification": {
+      "title": "DepotNotification",
+      "description": "Warehouse preparation alert for a sale",
+      "type": "object",
+      "properties": {
+        "invoiceId": { "type": "string" },
+        "reference": { "type": "string" },
+        "date": { "type": "string" },
+        "vendeur": { "type": "string" },
+        "magasin": { "type": "string" },
+        "client": { "type": "string" },
+        "clientTel": { "type": "string" },
+        "totalNet": { "type": "number" },
+        "m2Total": { "type": "number" },
+        "cartonsTotal": { "type": "integer" },
+        "articlesSummary": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" }
+      },
+      "required": ["invoiceId", "reference", "date", "vendeur", "magasin", "client", "clientTel", "totalNet", "m2Total", "cartonsTotal", "articlesSummary", "read", "createdAt", "updatedAt"]
+    },
+    "StoreInfo": {
+      "title": "StoreInfo",
+      "description": "Store legal identity and invoice header",
+      "type": "object",
+      "properties": {
+        "nom": { "type": "string" },
+        "nomArabe": { "type": "string" },
+        "slogan": { "type": "string" },
+        "adresse": { "type": "string" },
+        "tel": { "type": "string" },
+        "tel2": { "type": "string" },
+        "email": { "type": "string" },
+        "rc": { "type": "string" },
+        "nif": { "type": "string" },
+        "nis": { "type": "string" },
+        "ai": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" }
+      },
+      "required": ["nom", "nomArabe", "slogan", "adresse", "tel", "tel2", "email", "rc", "nif", "nis", "ai", "createdAt", "updatedAt"]
+    },
+    "AppSettings": {
+      "title": "AppSettings",
+      "description": "POS workspace preferences",
+      "type": "object",
+      "properties": {
+        "printFormat": { "type": "string" },
+        "a5Density": { "type": "string" },
+        "hideBainTeinteFacture": { "type": "boolean" },
+        "colorTheme": { "type": "string" },
+        "touchFriendlyMode": { "type": "boolean" },
+        "activeStore": { "type": "string" },
+        "enableSoundAlerts": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())" }
+      },
+      "required": ["printFormat", "a5Density", "hideBainTeinteFacture", "colorTheme", "touchFriendlyMode", "activeStore", "enableSoundAlerts", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserAccount" },
+      "description": "Authenticated user account root"
+    },
+    "/users/{userId}/products/{productId}": {
+      "schema": { "$ref": "#/entities/TileProduct" },
+      "description": "Ceramic catalog products and stock"
+    },
+    "/users/{userId}/invoices/{invoiceId}": {
+      "schema": { "$ref": "#/entities/Invoice" },
+      "description": "POS invoices and sales history"
+    },
+    "/users/{userId}/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "Customer directory and credit ledger"
+    },
+    "/users/{userId}/suppliers/{supplierId}": {
+      "schema": { "$ref": "#/entities/Supplier" },
+      "description": "Factory suppliers directory"
+    },
+    "/users/{userId}/supplier_movements/{movementId}": {
+      "schema": { "$ref": "#/entities/SupplierMovement" },
+      "description": "Supplier ledger movements"
+    },
+    "/users/{userId}/caisse_movements/{movementId}": {
+      "schema": { "$ref": "#/entities/CaisseMovement" },
+      "description": "Cash register entry and exit log"
+    },
+    "/users/{userId}/daily_caisse_counts/{countId}": {
+      "schema": { "$ref": "#/entities/DailyCaisseCount" },
+      "description": "Daily cash register reconciliations"
+    },
+    "/users/{userId}/staff_users/{staffId}": {
+      "schema": { "$ref": "#/entities/StaffUser" },
+      "description": "POS staff terminal profiles"
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/DepotNotification" },
+      "description": "Depot preparation alerts"
+    },
+    "/users/{userId}/store_info/{configId}": {
+      "schema": { "$ref": "#/entities/StoreInfo" },
+      "description": "Store identity document"
+    },
+    "/users/{userId}/app_settings/{configId}": {
+      "schema": { "$ref": "#/entities/AppSettings" },
+      "description": "App settings document"
+    }
+  }
+}

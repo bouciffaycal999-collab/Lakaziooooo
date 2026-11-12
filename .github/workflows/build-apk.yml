@@ -1,0 +1,59 @@
+name: Build Kader POS APK
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Restore debug signing keystore
+        run: |
+          if [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          else
+            keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Accept Android SDK licenses
+        run: yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.1"
+
+      - name: Build Debug APK
+        run: gradle assembleDebug --no-daemon
+
+      - name: Prepare Kader_POS.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk Kader_POS.apk
+
+      - name: Publish direct APK download in GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload latest Kader_POS.apk --clobber || \
+          gh release create latest Kader_POS.apk \
+            --title "Kader POS (APK)" \
+            --notes "Tap Kader_POS.apk below to download and install directly on Android."
+
+      - name: Upload APK artifact backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kader_POS_APK
+          path: Kader_POS.apk
